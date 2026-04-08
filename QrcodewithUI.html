@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Tool</title>
+
+  <!-- Inter Font -->
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CDN -->
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Subtle glow */
+    .glow:focus {
+      box-shadow: 0 0 0 1px #3B82F6;
+    }
+
+    /* Fade in animation */
+    .fade-in {
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
+</head>
+
+<body class="bg-[#0F172A] text-[#E5E7EB] min-h-screen flex flex-col items-center">
+
+  <!-- Header -->
+
+  <header class="w-full max-w-4xl px-6 py-8 flex justify-between items-center">
+    <h1 class="text-lg font-semibold">QR Studio</h1>
+    <span class="text-sm text-[#9CA3AF]">Minimal QR Generator</span>
+  </header>
+
+  <!-- Main Card -->
+
+  <main class="w-full max-w-md px-6">
+    <div class="bg-[#111827] border border-[#1F2937] rounded-xl p-6 space-y-6">
+
+```
+  <!-- Title -->
+  <div>
+    <h2 class="text-xl font-semibold">Generate QR Code</h2>
+    <p class="text-sm text-[#9CA3AF]">Simple, fast, no tracking.</p>
+  </div>
+
+  <!-- Input -->
+  <input 
+    id="urlInput"
+    type="text"
+    placeholder="https://example.com"
+    class="w-full px-3 py-2 rounded-md bg-[#0F172A] border border-[#1F2937] focus:outline-none glow transition"
+  >
+
+  <!-- Upload -->
+  <div id="dropArea"
+    class="border border-dashed border-[#1F2937] rounded-md p-6 text-sm text-[#9CA3AF] text-center cursor-pointer transition hover:border-[#3B82F6]">
+    Drag & drop logo (max 200KB) or click
+    <input type="file" id="logoInput" accept="image/*" class="hidden">
+  </div>
+
+  <p id="logoStatus" class="text-xs text-[#9CA3AF]"></p>
+
+  <!-- Options -->
+  <div class="flex gap-6 text-sm">
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="radio" name="logoOption" value="noLogo" checked>
+      No Logo
+    </label>
+
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="radio" name="logoOption" value="withLogo">
+      With Logo
+    </label>
+  </div>
+
+  <!-- Buttons -->
+  <div class="flex gap-3">
+    <button onclick="generateQR()"
+      class="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] transition px-4 py-2 rounded-md text-white text-sm">
+      Generate
+    </button>
+
+    <button onclick="downloadQR()" id="downloadBtn" disabled
+      class="flex-1 border border-[#1F2937] hover:border-[#3B82F6] transition px-4 py-2 rounded-md text-sm">
+      Download
+    </button>
+  </div>
+
+  <!-- Output -->
+  <div class="text-center space-y-3 fade-in">
+    <h3 id="title" class="text-sm text-[#9CA3AF]"></h3>
+    <canvas id="qr" class="mx-auto bg-white p-2 rounded-md"></canvas>
+  </div>
+
+</div>
+```
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+  <script>
+    let currentCanvas = null;
+    let uploadedLogo = null;
+
+    const dropArea = document.getElementById("dropArea");
+    const logoInput = document.getElementById("logoInput");
+    const logoStatus = document.getElementById("logoStatus");
+
+    dropArea.addEventListener("click", () => logoInput.click());
+
+    logoInput.addEventListener("change", handleFile);
+
+    dropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropArea.classList.add("border-blue-500");
+    });
+
+    dropArea.addEventListener("dragleave", () => {
+      dropArea.classList.remove("border-blue-500");
+    });
+
+    dropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropArea.classList.remove("border-blue-500");
+      handleFile({ target: { files: e.dataTransfer.files } });
+    });
+
+    function handleFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 200 * 1024) {
+        alert("Logo must be under 200KB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function () {
+        uploadedLogo = reader.result;
+        logoStatus.innerText = "Logo uploaded ✓";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function generateQR() {
+      const url = document.getElementById("urlInput").value;
+
+      if (!url) {
+        alert("Enter a valid URL");
+        return;
+      }
+
+      let domain;
+      try {
+        domain = new URL(url).hostname;
+      } catch {
+        alert("Invalid URL");
+        return;
+      }
+
+      document.getElementById("title").innerText = domain;
+
+      const canvas = document.getElementById("qr");
+
+      QRCode.toCanvas(canvas, url, { width: 260 }, function (error) {
+        if (error) return console.error(error);
+
+        const option = document.querySelector('input[name="logoOption"]:checked').value;
+
+        if (option === "withLogo") {
+          if (!uploadedLogo) {
+            alert("Upload logo first");
+            return;
+          }
+          drawLogo(canvas);
+        }
+
+        currentCanvas = canvas;
+        document.getElementById("downloadBtn").disabled = false;
+      });
+    }
+
+    function drawLogo(canvas) {
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      img.src = uploadedLogo;
+
+      img.onload = function () {
+        const size = 50;
+        const x = (canvas.width - size) / 2;
+        const y = (canvas.height - size) / 2;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(x - 6, y - 6, size + 12, size + 12);
+        ctx.drawImage(img, x, y, size, size);
+      };
+    }
+
+    function downloadQR() {
+      if (!currentCanvas) return;
+
+      const link = document.createElement("a");
+      link.download = "qr-code.png";
+      link.href = currentCanvas.toDataURL();
+      link.click();
+    }
+  </script>
+
+</body>
+</html>
+

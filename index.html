@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code Generator</title>
+</head>
+<body style="text-align:center; font-family: Arial;">
+
+  <h2 id="title"></h2>
+  <canvas id="qr"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+  <script>
+    const url = "ENTER your URL here"; // Replace with your desired URL // format like https://www.google.com //
+
+    // Extract domain name
+    const domain = new URL(url).hostname;
+
+    // Set title dynamically
+    document.getElementById("title").innerText = "QR Code for " + domain;
+
+    // Generate QR code
+    QRCode.toCanvas(document.getElementById('qr'), url, {
+      width: 250
+    }, function (error) {
+      if (error) console.error(error);
+      else console.log("QR generated");
+    });
+  </script>
+
+</body>
+</html>

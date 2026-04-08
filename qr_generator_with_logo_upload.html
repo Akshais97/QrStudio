@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code Generator</title>
+</head>
+<body style="text-align:center; font-family: Arial; padding:20px;">
+
+  <h2>QR Code Generator</h2>
+
+  <input id="urlInput" type="text" placeholder="Enter URL (https://example.com)" style="width:300px; padding:8px;">
+  <br><br>
+
+  <!-- Logo Upload -->
+  <div id="dropArea" style="border:2px dashed #ccc; padding:20px; width:300px; margin:auto;">
+    Drag & Drop Logo Here (Max 200KB) or Click to Upload
+    <input type="file" id="logoInput" accept="image/*" style="display:none;">
+  </div>
+
+  <p id="logoStatus" style="color:gray;"></p>
+
+  <!-- Options -->
+  <label>
+    <input type="radio" name="logoOption" value="noLogo" checked>
+    Without Logo
+  </label>
+
+  <label style="margin-left:20px;">
+    <input type="radio" name="logoOption" value="withLogo">
+    With Uploaded Logo
+  </label>
+
+  <br><br>
+
+  <button onclick="generateQR()">Generate QR Code</button>
+  <button onclick="downloadQR()" id="downloadBtn" disabled>Download QR Code</button>
+
+  <br><br>
+
+  <h3 id="title"></h3>
+  <canvas id="qr"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+  <script>
+    let currentCanvas = null;
+    let uploadedLogo = null;
+
+    const dropArea = document.getElementById("dropArea");
+    const logoInput = document.getElementById("logoInput");
+    const logoStatus = document.getElementById("logoStatus");
+
+    dropArea.addEventListener("click", () => logoInput.click());
+
+    logoInput.addEventListener("change", handleFile);
+
+    dropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropArea.style.borderColor = "blue";
+    });
+
+    dropArea.addEventListener("dragleave", () => {
+      dropArea.style.borderColor = "#ccc";
+    });
+
+    dropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropArea.style.borderColor = "#ccc";
+      handleFile({ target: { files: e.dataTransfer.files } });
+    });
+
+    function handleFile(event) {
+      const file = event.target.files[0];
+
+      if (!file) return;
+
+      if (file.size > 200 * 1024) {
+        alert("Logo must be under 200KB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function () {
+        uploadedLogo = reader.result;
+        logoStatus.innerText = "Logo uploaded successfully!";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function generateQR() {
+      const url = document.getElementById("urlInput").value;
+
+      if (!url) {
+        alert("Enter a valid URL");
+        return;
+      }
+
+      let domain;
+      try {
+        domain = new URL(url).hostname;
+      } catch {
+        alert("Invalid URL (use https://...)");
+        return;
+      }
+
+      document.getElementById("title").innerText = "QR Code for " + domain;
+
+      const canvas = document.getElementById("qr");
+
+      QRCode.toCanvas(canvas, url, { width: 300 }, function (error) {
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        const option = document.querySelector('input[name="logoOption"]:checked').value;
+
+        if (option === "withLogo") {
+          if (!uploadedLogo) {
+            alert("Please upload a logo first");
+            return;
+          }
+          drawLogo(canvas);
+        }
+
+        currentCanvas = canvas;
+        document.getElementById("downloadBtn").disabled = false;
+      });
+    }
+
+    function drawLogo(canvas) {
+      const ctx = canvas.getContext("2d");
+
+      const img = new Image();
+      img.src = uploadedLogo;
+
+      img.onload = function () {
+        const size = 50;
+        const x = (canvas.width - size) / 2;
+        const y = (canvas.height - size) / 2;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(x - 6, y - 6, size + 12, size + 12);
+
+        ctx.drawImage(img, x, y, size, size);
+      };
+    }
+
+    function downloadQR() {
+      if (!currentCanvas) return;
+
+      const link = document.createElement("a");
+      link.download = "qr-code.png";
+      link.href = currentCanvas.toDataURL();
+      link.click();
+    }
+  </script>
+
+</body>
+</html>
