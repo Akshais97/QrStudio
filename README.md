@@ -8,7 +8,7 @@ Generate QR codes instantly, optionally embed your logo, and download them — a
 
 ## 🚀 Live Demo
 
-👉 https://akshais97.github.io/qrstudio/
+👉 https://akshais97.github.io/QrStudio/
 
 ---
 
